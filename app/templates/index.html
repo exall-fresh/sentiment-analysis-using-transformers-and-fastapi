@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment Analysis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2 class="text-center">Sentiment Analysis</h2>
+        
+        <div class="mb-3">
+            <label for="textInput" class="form-label">Enter text for analysis:</label>
+            <textarea class="form-control" id="textInput" rows="3"></textarea>
+            <button class="btn btn-primary mt-2 w-100" onclick="analyzeText()">Analyze Text</button>
+        </div>
+        <p id="result" class="text-center fw-bold"></p>
+        
+        <hr>
+        
+        <div class="mb-3">
+            <label for="fileInput" class="form-label">Upload CSV File:</label>
+            <input type="file" class="form-control" id="fileInput">
+            <button class="btn btn-success mt-2 w-100" onclick="analyzeCSV()">Upload & Analyze CSV</button>
+        </div>
+        <p id="fileResult" class="text-center text-success"></p>
+    </div>
+
+    <script>
+        async function analyzeText() {
+            const text = document.getElementById("textInput").value;
+            const formData = new FormData();
+            formData.append("text", text);
+
+            const response = await fetch("http://127.0.0.1:8000/analyze-text", {
+                method: "POST",
+                body: formData
+            });
+            const result = await response.json();
+            document.getElementById("result").innerText = `Sentiment: ${result.sentiment} (Confidence: ${result.confidence.toFixed(2)})`;
+        }
+
+        async function analyzeCSV() {
+            const fileInput = document.getElementById("fileInput");
+            const file = fileInput.files[0];
+            if (!file) {
+                alert("Please upload a CSV file");
+                return;
+            }
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const response = await fetch("http://127.0.0.1:8000/analyze-csv", {
+                method: "POST",
+                body: formData
+            });
+            
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "analyzed_feedback.csv";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                document.getElementById("fileResult").innerText = "CSV file processed. Downloading...";
+            } else {
+                document.getElementById("fileResult").innerText = "Error processing CSV file";
+            }
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
