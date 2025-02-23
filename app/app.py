@@ -1,17 +1,16 @@
 
 from fastapi import UploadFile, File, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Template
+from fastapi.templating import Jinja2Templates
 from fastapi import UploadFile, File, Form
 import pandas as pd
 import io
-from . import app, sentiment_pipeline  # Import app instance from __init__.py
-
+from . import app, sentiment_pipeline  # Import app instance from __init__.p
 
 # Route to serve the frontend page
 @app.get("/", response_class=HTMLResponse)
 async def serve_ui():
-    with open("templates/index.html", "r") as file:
+    with open("app/templates/index.html", "r") as file:
         return file.read()
 @app.post("/analyze-text")
 async def analyze_text(text: str = Form(...)):
