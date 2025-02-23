@@ -3,53 +3,194 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analysis Results</title>
+    <title>Sentiment Analysis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        .download-btn {
-            margin-top: 20px;
-            padding: 10px 20px;
-            background-color: #0d6efd;
-            color: white;
-            border: none;
+        .drag-area {
+            border: 2px dashed #0d6efd;
             border-radius: 5px;
-            cursor: pointer;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: rgba(13, 110, 253, 0.05);
         }
-        .download-btn:hover {
-            background-color: #0a58ca;
+        .drag-area.dragover {
+            background: rgba(13, 110, 253, 0.1);
+            border-color: #0a58ca;
+        }
+        .status-message {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .status-message.show {
+            opacity: 1;
         }
     </style>
 </head>
-<body>
-    <h1>Analysis Results</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>Feedback</th>
-                <th>Sentiment</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for result in results %}
-            <tr>
-                <td>{{ result.feedback }}</td>
-                <td>{{ result.sentiment }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    <a href="/download-csv" class="download-btn">Download Results as CSV</a>
+<body class="bg-light">
+    <div class="container mt-5">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="text-center mb-4">
+                    <i class="fas fa-brain text-primary"></i>
+                    Sentiment Analysis bitch
+                </h2>
+                
+                <div class="mb-4">
+                    <textarea 
+                        class="form-control" 
+                        id="textInput" 
+                        rows="3" 
+                        placeholder="Enter text for analysis or drag & drop a CSV file here..."
+                    ></textarea>
+                </div>
+
+                <div class="drag-area mb-4" id="dragArea">
+                    <i class="fas fa-cloud-upload-alt fa-2x text-primary mb-2"></i>
+                    <p class="mb-0">Drag & drop a CSV file or click to upload</p>
+                    <input type="file" id="fileInput" class="d-none" accept=".csv">
+                </div>
+
+                <button class="btn btn-primary w-100 mb-3" id="analyzeBtn">
+                    <i class="fas fa-search me-2"></i>
+                    Analyze
+                </button>
+
+                <div class="status-message text-center p-3 rounded" id="statusMessage">
+                    <i class="fas fa-spinner fa-spin me-2"></i>
+                    <span id="statusText"></span>
+                </div>
+
+                <div class="result mt-4 text-center d-none" id="resultArea">
+                    <h4 class="mb-3">Analysis Result</h4>
+                    <div class="p-3 bg-light rounded">
+                        <i class="fas fa-chart-bar text-primary me-2"></i>
+                        <span id="result"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dragArea = document.getElementById('dragArea');
+        const fileInput = document.getElementById('fileInput');
+        const textInput = document.getElementById('textInput');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const statusMessage = document.getElementById('statusMessage');
+        const statusText = document.getElementById('statusText');
+        const resultArea = document.getElementById('resultArea');
+        const result = document.getElementById('result');
+
+        function showStatus(message, type = 'info') {
+            statusMessage.className = 'status-message show p-3 rounded';
+            statusMessage.className += type === 'error' ? ' bg-danger text-white' : ' bg-light';
+            statusText.textContent = message;
+        }
+
+        function hideStatus() {
+            statusMessage.className = 'status-message p-3 rounded';
+        }
+
+        async function analyzeContent() {
+            const text = textInput.value.trim();
+            const file = fileInput.files[0];
+
+            if (!text && !file) {
+                showStatus('Please enter text or upload a CSV file', 'error');
+                return;
+            }
+
+            resultArea.className = 'result mt-4 text-center d-none';
+            const formData = new FormData();
+
+            if (file) {
+                showStatus('Processing CSV file...');
+                formData.append('file', file);
+                try {
+                    const response = await fetch('http://127.0.0.1:8000/analyze-csv', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'analyzed_feedback.csv';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        showStatus('CSV analysis complete! Downloading results...');
+                    } else {
+                        showStatus('Error processing CSV file', 'error');
+                    }
+                } catch (error) {
+                    showStatus('Network error occurred', 'error');
+                }
+            } else {
+                showStatus('Analyzing text...');
+                formData.append('text', text);
+                try {
+                    const response = await fetch('http://127.0.0.1:8000/analyze-text', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+                    resultArea.className = 'result mt-4 text-center';
+                    result.innerHTML = `Sentiment: ${data.sentiment} (Confidence: ${data.confidence.toFixed(2)})`;
+                    hideStatus();
+                } catch (error) {
+                    showStatus('Network error occurred', 'error');
+                }
+            }
+        }
+
+        // Event Listeners
+        analyzeBtn.addEventListener('click', analyzeContent);
+
+        dragArea.addEventListener('click', () => fileInput.click());
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dragArea.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dragArea.className = 'drag-area dragover';
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dragArea.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dragArea.className = 'drag-area';
+            });
+        });
+
+        dragArea.addEventListener('drop', (e) => {
+            const file = e.dataTransfer.files[0];
+            if (file && file.type === 'text/csv') {
+                fileInput.files = e.dataTransfer.files;
+                showStatus('CSV file ready for analysis');
+            } else {
+                showStatus('Please upload a CSV file', 'error');
+            }
+        });
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files[0]) {
+                showStatus('CSV file ready for analysis');
+            }
+        });
+
+        textInput.addEventListener('input', () => {
+            if (textInput.value.trim()) {
+                fileInput.value = '';
+                hideStatus();
+            }
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
