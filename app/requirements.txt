@@ -1,3 +1,5 @@
 transformers==4.49.0
 tensorflow==2.18.0
 tf_keras==2.18.0
+pandas
+python-multipart
