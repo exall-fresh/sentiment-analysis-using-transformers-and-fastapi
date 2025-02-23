@@ -1,7 +1,9 @@
 🎯 **Sentiment Analysis Web Application**
 
-** Are you interested in knowing how customers feel about your brand based on their feedback ?" 
+** Are you interested in knowing how customers feel about your brand based on their feedback ?"**
+
 ** "Well ofcourse using common sense"**
+
 **Now imagine 1 billion records of customer feedback!!**
 
 Hello everyone my name is **Patrick Exall Nyasulu** I present you a sentiment analysis web application powered by **FastAPI** and **Hugging Face Transformers**. This application provides real-time sentiment analysis through an intuitive web interface, supporting both direct text input and batch processing via CSV files.
